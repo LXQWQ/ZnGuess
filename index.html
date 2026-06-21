@@ -171,20 +171,16 @@ async function onLoggedIn() {
   me.user = data.user;
   if (!me.user) return;
 
-  // 从 JWT app_metadata 读取管理员状态（不可伪造，由 Auth Hook 注入）
-  const appMeta = me.user.app_metadata || {};
-  me.isAdmin = appMeta.is_admin === 'true' || appMeta.is_admin === true;
-
-  // 检查是否有 profile（用户名）
-  const { data: profile } = await sb.from('profiles').select('username').eq('user_id', me.user.id).maybeSingle();
+  // 检查是否有 profile（用户名 + 管理员状态）
+  const { data: profile } = await sb.from('profiles').select('username,is_admin').eq('user_id', me.user.id).maybeSingle();
   if (!profile) {
-    // 新用户，弹出用户名设置
     document.getElementById('usernameModal').classList.add('show');
     document.getElementById('usernameInput').value = '';
     document.getElementById('usernameMsg').textContent = '';
     return;
   }
-  me.profile = profile; // { username }
+  me.profile = profile; // { username, is_admin }
+  me.isAdmin = profile.is_admin === true;
   finishLogin();
 }
 
@@ -202,15 +198,8 @@ async function setUsername() {
     msg.textContent = error.message.includes('unique') ? '该用户名已被使用，换一个吧' : error.message;
     return;
   }
-  me.profile = { username: name };
-  // 设置用户名后刷新 session，让 Auth Hook 重新签发 JWT
-  await sb.auth.refreshSession();
-  // 重新读取 JWT 中的 is_admin
-  const { data: refreshed } = await sb.auth.getUser();
-  if (refreshed.user) {
-    const am = refreshed.user.app_metadata || {};
-    me.isAdmin = am.is_admin === 'true' || am.is_admin === true;
-  }
+  me.profile = { username: name, is_admin: false };
+  me.isAdmin = false;
   document.getElementById('usernameModal').classList.remove('show');
   finishLogin();
 }
