@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html><head><title>ZnGuess Website</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#113;color:#ccf;font-family:"JetBrains Mono",monospace}
+#app{column-count:4;column-gap:1.5vh;padding:1.5vh;height:100%;width:100%}
+.card{background:#336;margin-bottom:1.5vh;display:inline-block;width:100%;cursor:pointer;break-inside:avoid;position:relative}
+.card.rank{background:#336;cursor:default;font-size:2vh;padding:1vh 1.2vh}
+.card.rank .r{display:flex;justify-content:space-between}
+.card.rank .r .n{color:#ccf}
+.card.rank .r .u{color:#ffc}
+.card.rank .r .p{color:#ccf}
+.card.cracked{background:#113;cursor:default}
+.card .top{display:flex;background:#336;padding:.8vh .8vh;gap:.8vh;align-items:center;line-height:1.6em}
+.card.cracked .top{background:#113}
+.card .top .t{flex:1;background:#113;padding:.2vh .6vh;color:#ccf;font-size:1.6vh;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.card .top .s{background:#113;padding:.2vh .6vh;color:#ffc;font-size:1.6vh;white-space:nowrap}
+.card .top .p{background:#113;padding:.2vh .6vh;color:#ffc;font-size:1.6vh;white-space:nowrap}
+.card .body{background:#336;padding:.5vh 1vh;color:#ccf;font-size:1.6vh;line-height:1.6;white-space:pre-wrap;word-break:break-all;min-height:3vh}
+.card.cracked .body{background:#113;opacity:.2}
+.card .ov{display:none;position:absolute;top:0;left:0;width:100%;height:100%;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;z-index:2}
+.card.cracked .ov{display:flex}
+.card .ov .c1{font-family:"Times New Roman",serif;color:#ffc;font-size:2.8vh}
+.card .ov .c2{font-family:"Times New Roman",serif;color:#ffc;font-size:2.4vh}
+.ffc{color:#ffc}
+.card.add{background:#336;display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:6vh}
+.card.add:hover{background:#448}
+.card.add .pl{font-size:4vh;color:#ffc;line-height:1}
+.card .author{font-size:1.2vh;color:#889;padding:0 1vh .5vh 1vh;text-align:right}
+.card.cracked .author{opacity:.3}
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.75);z-index:999;justify-content:center;align-items:center}
+.modal.show{display:flex}
+.modal .box{background:#224;padding:2vh;width:85%;max-width:100vh;height:75vh;display:flex;flex-direction:column;gap:1.5vh}
+.modal .box .mt{color:#ccf;font-size:1.8vh;flex-shrink:0}
+.modal .box textarea{flex:1;background:#113;color:#ccf;border:2px solid #336;padding:1.5vh;font-size:1.8vh;font-family:"JetBrains Mono",monospace;resize:none;outline:none;line-height:1.8;white-space:pre-wrap;tab-size:4;min-height:0}
+.modal .box .acts{display:flex;gap:1.5vh;justify-content:flex-end;flex-shrink:0}
+.modal .box .acts .btn{background:#336;color:#ffc;padding:.8vh 3vh;font-size:1.8vh;cursor:pointer;border:none;font-family:inherit}
+.modal .box .acts .btn:hover{background:#448}
+.fab{position:fixed;right:2vh;bottom:8vh;width:5vh;height:5vh;background:rgba(51,51,102,0.3);border-radius:10%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:100;font-size:4vh;color:rgba(255,255,204,0.3)} .fab:hover{background:rgba(68,68,136,0.5)}
+.fab1{position:fixed;right:2vh;bottom:14vh;width:5vh;height:5vh;background:rgba(51,51,102,0.3);border-radius:10%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:100;font-size:4vh;color:rgba(255,255,204,0.3)} .fab1:hover{background:rgba(68,68,136,0.5)}
+.fab2{position:fixed;right:2vh;bottom:20vh;width:5vh;height:5vh;background:rgba(51,51,102,0.3);border-radius:10%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:100;font-size:4vh;color:rgba(255,255,204,0.3)} .fab2:hover{background:rgba(68,68,136,0.5)}
+.fab3{position:fixed;right:2vh;bottom:26vh;width:5vh;height:5vh;background:rgba(51,51,102,0.5);border-radius:10%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:100;font-size:4vh;color:rgba(255,255,204,0.3)} .fab3:hover{background:rgba(68,68,136,0.5)}
+.fab4{position:fixed;right:2vh;bottom:32vh;width:5vh;height:5vh;background:rgba(51,51,102,0.3);border-radius:10%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:100;font-size:3vh;color:rgba(255,255,204,0.3)} .fab4:hover{background:rgba(68,68,136,0.5)}
+.modal .box .acts .btn.del{background:#311;color:#fcc} .modal .box .acts .btn.del:hover{background:#633}
+/* Auth / username modal */
+.modal .box input{background:#113;color:#ccf;border:2px solid #336;padding:1.5vh;font-size:1.8vh;font-family:"JetBrains Mono",monospace;outline:none}
+.modal .box input:focus{border-color:#558}
+.auth-tabs{display:flex;gap:0}
+.auth-tabs .tab{flex:1;text-align:center;padding:1vh;font-size:1.8vh;cursor:pointer;background:#113;color:#ccf;border:none;font-family:inherit}
+.auth-tabs .tab.active{background:#336;color:#ffc}
+#authMsg{font-size:1.4vh;min-height:2vh}
+.modal .box .hint{font-size:1.4vh;color:#889}
+
+</style>
+<link href="https://cdn.jsdelivr.net/npm/jetbrains-mono@1.0.6/css/jetbrains-mono.min.css" rel="stylesheet">
+</head><body>
+<div class="fab4" id="userBadge" onclick="handleUserBadge()" style="display:none" title="用户">👤</div>
+<div class="fab3" onclick="exportAll()">Dt</div>
+<div class="fab2" onclick="changePage(1)"> -></div>
+<div class="fab1" onclick="changePage(-1)"><- </div>
+<div class="fab" onclick="newPuzzle()">T+</div>
+<div id="app"></div>
+<div class="modal" id="editor"><div class="box"><div class="mt" id="edTitle">Edit Puzzle</div><textarea id="edText" spellcheck="false"></textarea><div class="acts"><div class="btn" style="color:#faa" id="btnDelete" onclick="deletePuzzle()">删除 Puzzle</div><div class="btn" id="btnSave" onclick="savePuzzle()">保存 Puzzle</div><div class="btn" onclick="closeEditor()">取消...</div></div></div></div>
+
+<!-- 登录/注册弹窗 -->
+<div class="modal show" id="authModal"><div class="box" style="height:auto;max-height:65vh"><div class="mt" id="authTitle">Login / Sign Up</div><div class="auth-tabs"><div class="tab active" id="tabLogin" onclick="switchAuthTab('login')">登录</div><div class="tab" id="tabSignup" onclick="switchAuthTab('signup')">注册</div></div><input type="email" id="authEmail" placeholder="Email 地址"><input type="password" id="authPassword" placeholder="密码（≥6位）"><div id="authMsg" style="color:#faa"></div><div class="acts"><div class="btn" id="authBtn" onclick="doAuth()">登录</div><div class="btn" style="background:#222;color:#889" onclick="skipAuth()">以游客身份浏览</div></div></div></div>
+
+<!-- 设置用户名弹窗 -->
+<div class="modal" id="usernameModal"><div class="box" style="height:auto;max-height:50vh"><div class="mt">设置你的显示名称</div><div class="hint">这将作为你提交谜题时的作者署名</div><input type="text" id="usernameInput" placeholder="输入用户名（2-20字）" maxlength="20"><div id="usernameMsg" style="font-size:1.4vh;min-height:2vh;color:#faa"></div><div class="acts"><div class="btn" onclick="setUsername()">确认</div></div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// ============ Supabase 初始化 ============
+const SB_URL = 'https://kanmbpyvnxsmgwjgvuzp.supabase.co';
+const SB_KEY = 'sb_publishable_XXk4dqaQFn7K3DlYLxERqw_PLpgBt8x';
+const { createClient } = supabase;
+const sb = createClient(SB_URL, SB_KEY);
+
+// ============ 全局状态 ============
+let TOTAL_PAGES = 100;
+let state = { cur: 0, puzzles: [] };
+let ed = { puzzleId: null, open: false };
+let authMode = 'login';
+let me = { user: null, profile: null, isAdmin: false }; // isAdmin 来自 JWT claim，不可伪造
+
+// ============ 工具 ============
+function isOwner(puzzle) {
+  if (!me.user) return false;
+  return puzzle.user_id === me.user.id;
+}
+function canEdit(puzzle) {
+  if (!puzzle) return false;
+  if (me.isAdmin) return true;        // JWT claim，不可伪造
+  return isOwner(puzzle);
+}
+function canDelete(puzzle) {
+  return canEdit(puzzle);
+}
+
+// ============ 认证 ============
+function switchAuthTab(mode) {
+  authMode = mode;
+  document.getElementById('tabLogin').classList.toggle('active', mode === 'login');
+  document.getElementById('tabSignup').classList.toggle('active', mode === 'signup');
+  document.getElementById('authBtn').textContent = mode === 'login' ? '登录' : '注册';
+  document.getElementById('authTitle').textContent = mode === 'login' ? 'Login' : 'Sign Up';
+  document.getElementById('authMsg').textContent = '';
+}
+
+async function doAuth() {
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const msg = document.getElementById('authMsg');
+  msg.style.color = '#faa';
+  if (!email || !password) { msg.textContent = '请填写 Email 和密码'; return; }
+  if (password.length < 6) { msg.textContent = '密码至少 6 位'; return; }
+
+  let result;
+  if (authMode === 'login') {
+    result = await sb.auth.signInWithPassword({ email, password });
+  } else {
+    result = await sb.auth.signUp({ email, password });
+  }
+
+  if (result.error) {
+    if (authMode === 'signup' && result.error.message.includes('already')) {
+      msg.textContent = '该邮箱已注册，请切换到登录';
+    } else {
+      msg.textContent = result.error.message;
+    }
+    return;
+  }
+
+  if (authMode === 'signup' && result.data.user && !result.data.session) {
+    msg.style.color = '#ffc';
+    msg.textContent = '注册成功！请检查邮箱确认链接（或已关闭确认则直接登录）';
+    return;
+  }
+
+  onLoggedIn();
+}
+
+function skipAuth() {
+  document.getElementById('authModal').classList.remove('show');
+  document.getElementById('userBadge').style.display = 'flex';
+  document.getElementById('userBadge').textContent = '👽';
+  document.getElementById('userBadge').title = '游客模式 — 点击登录';
+  loadPage();
+}
+
+async function handleUserBadge() {
+  if (!me.user) {
+    // 游客点击 → 显示登录弹窗
+    await sb.auth.signOut();
+    me = { user: null, profile: null, isAdmin: false };
+    document.getElementById('userBadge').style.display = 'none';
+    document.getElementById('authModal').classList.add('show');
+  } else {
+    // 已登录用户点击 → 登出
+    await sb.auth.signOut();
+    me = { user: null, profile: null, isAdmin: false };
+    document.getElementById('userBadge').style.display = 'none';
+    document.getElementById('authModal').classList.add('show');
+    document.getElementById('app').innerHTML = '';
+  }
+}
+
+async function onLoggedIn() {
+  document.getElementById('authModal').classList.remove('show');
+  const { data } = await sb.auth.getUser();
+  me.user = data.user;
+  if (!me.user) return;
+
+  // 从 JWT app_metadata 读取管理员状态（不可伪造，由 Auth Hook 注入）
+  const appMeta = me.user.app_metadata || {};
+  me.isAdmin = appMeta.is_admin === 'true' || appMeta.is_admin === true;
+
+  // 检查是否有 profile（用户名）
+  const { data: profile } = await sb.from('profiles').select('username').eq('user_id', me.user.id).maybeSingle();
+  if (!profile) {
+    // 新用户，弹出用户名设置
+    document.getElementById('usernameModal').classList.add('show');
+    document.getElementById('usernameInput').value = '';
+    document.getElementById('usernameMsg').textContent = '';
+    return;
+  }
+  me.profile = profile; // { username }
+  finishLogin();
+}
+
+async function setUsername() {
+  const name = document.getElementById('usernameInput').value.trim();
+  const msg = document.getElementById('usernameMsg');
+  if (name.length < 2 || name.length > 20) { msg.textContent = '用户名需要 2-20 个字符'; return; }
+
+  const { error } = await sb.from('profiles').insert({
+    user_id: me.user.id,
+    username: name,
+    is_admin: false  // 默认非管理员，由 DDL 修改
+  });
+  if (error) {
+    msg.textContent = error.message.includes('unique') ? '该用户名已被使用，换一个吧' : error.message;
+    return;
+  }
+  me.profile = { username: name };
+  // 设置用户名后刷新 session，让 Auth Hook 重新签发 JWT
+  await sb.auth.refreshSession();
+  // 重新读取 JWT 中的 is_admin
+  const { data: refreshed } = await sb.auth.getUser();
+  if (refreshed.user) {
+    const am = refreshed.user.app_metadata || {};
+    me.isAdmin = am.is_admin === 'true' || am.is_admin === true;
+  }
+  document.getElementById('usernameModal').classList.remove('show');
+  finishLogin();
+}
+
+function finishLogin() {
+  document.getElementById('userBadge').style.display = 'flex';
+  document.getElementById('userBadge').textContent = (me.profile?.username || '??').slice(0, 3);
+  document.getElementById('userBadge').title = (me.profile?.username || '') + (me.isAdmin ? ' (管理员)' : '') + ' — 点击登出';
+  loadPage();
+}
+
+async function checkSession() {
+  const { data } = await sb.auth.getSession();
+  if (data.session) {
+    onLoggedIn();
+  } else {
+    document.getElementById('authModal').classList.add('show');
+  }
+}
+
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_IN' && session) {
+    onLoggedIn();
+  } else if (event === 'SIGNED_OUT') {
+    me = { user: null, profile: null, isAdmin: false };
+    document.getElementById('userBadge').style.display = 'none';
+    document.getElementById('authModal').classList.add('show');
+    document.getElementById('app').innerHTML = '';
+  }
+});
+
+// ============ 数据操作 ============
+async function loadPage() {
+  const { data, error } = await sb
+    .from('puzzles')
+    .select('*')
+    .eq('page', state.cur)
+    .order('sort_order');
+  if (error) { console.error(error); return; }
+  state.puzzles = data || [];
+  render();
+}
+
+async function insertPuzzle(puzzle) {
+  let maxOrder = 0;
+  for (let p of state.puzzles) {
+    if (p.sort_order > maxOrder) maxOrder = p.sort_order;
+  }
+  const row = {
+    page: state.cur,
+    sort_order: maxOrder + 1,
+    title: puzzle.title,
+    sl: puzzle.sl,
+    reward: puzzle.reward,
+    content: puzzle.content,
+    answer: puzzle.answer || '',
+    cracker: puzzle.cracker || '',
+    true_reward: puzzle.trueReward || 0,
+    author_name: puzzle.author_name || '游客'
+  };
+  if (me.user) row.user_id = me.user.id;
+
+  const { data, error } = await sb.from('puzzles').insert(row).select();
+  if (error) { alert('新建谜题失败: ' + error.message); return null; }
+  return data[0];
+}
+
+async function updatePuzzle(id, puzzle) {
+  const { error } = await sb
+    .from('puzzles')
+    .update({
+      title: puzzle.title,
+      sl: puzzle.sl,
+      reward: puzzle.reward,
+      content: puzzle.content,
+      answer: puzzle.answer || '',
+      cracker: puzzle.cracker || '',
+      true_reward: puzzle.trueReward || 0
+    })
+    .eq('id', id);
+  if (error) { console.error(error); alert('保存失败: ' + error.message); }
+}
+
+async function removePuzzle(id) {
+  const { error } = await sb.from('puzzles').delete().eq('id', id);
+  if (error) { console.error(error); alert('删除失败: ' + error.message); }
+}
+
+async function fetchAllPuzzles() {
+  let all = [];
+  for (let pg = 0; pg < TOTAL_PAGES; pg++) {
+    const { data } = await sb.from('puzzles').select('*').eq('page', pg).order('sort_order');
+    if (data) all = all.concat(data);
+  }
+  return all;
+}
+
+async function fetchRankings() {
+  const { data } = await sb.from('rankings').select('*');
+  return data || [];
+}
+
+// ============ 页面导航 ============
+function changePage(delta) {
+  let np = state.cur + delta;
+  if (np < 0 || np >= TOTAL_PAGES) return;
+  state.cur = np;
+  loadPage();
+}
+
+// ============ Markdown ============
+function md(txt) {
+  return txt
+    .replace(/~~(.*?)~~/g, '<span class="ffc">$1</span>')
+    .replace(/===(.*?)===/g, '<strong>$1</strong>');
+}
+
+// ============ 渲染 ============
+async function render() {
+  let app = document.getElementById('app'); app.innerHTML = '';
+  let cards = state.puzzles || [];
+
+  let final = [];
+  final.unshift({ type: 'rank' });
+  final = final.concat(cards);
+
+  let rankSorted = await fetchRankings();
+
+  for (let item of final) {
+    let d = document.createElement('div');
+    if (item.type === 'rank') {
+      d.className = 'card rank';
+      let html = '<div><<= Rankings =>></div>';
+      if (rankSorted.length === 0) {
+        html += '<div style="color:#667;">None of the puzzles cracked</div>';
+      } else {
+        for (let i = 0; i < rankSorted.length; i++) {
+          let { name, total_pts } = rankSorted[i];
+          html += `<div class="r"><span class="n">#${i + 1}</span><span class="u">${name}</span><span class="p">${total_pts}pts</span></div>`;
+        }
+      }
+      d.innerHTML = html; app.appendChild(d); continue;
+    }
+
+    let p = item;
+    let cr = p.cracker ? true : false;
+    d.className = 'card' + (cr ? ' cracked' : '');
+    // 所有人都能点开查看，权限在编辑器内控制
+    d.onclick = function () { openPuzzle(item); };
+
+    let top = document.createElement('div'); top.className = 'top';
+    let t = document.createElement('div'); t.className = 't'; t.innerHTML = p.title || 'Untitled';
+    let s = document.createElement('div'); s.className = 's'; s.innerHTML = p.sl || '';
+    let pt = document.createElement('div'); pt.className = 'p'; pt.innerHTML = p.reward || '';
+    top.append(t, s, pt); d.appendChild(top);
+
+    let body = document.createElement('div'); body.className = 'body'; body.innerHTML = md(p.content || ''); d.appendChild(body);
+
+    // 作者署名
+    let author = document.createElement('div'); author.className = 'author';
+    author.textContent = '— ' + (p.author_name || '游客');
+    d.appendChild(author);
+
+    if (cr) {
+      let ov = document.createElement('div'); ov.className = 'ov';
+      let c3 = document.createElement('div'); c3.className = 'c2'; c3.style.marginTop = '1vh'; c3.innerHTML = 'Answer: ' + p.answer;
+      let c1 = document.createElement('div'); c1.className = 'c1'; c1.innerHTML = 'Cracked By ' + p.cracker;
+      let c2 = document.createElement('div'); c2.className = 'c2'; c2.innerHTML = '+' + p.true_reward + 'pts';
+      ov.append(c3, c1, c2); d.appendChild(ov);
+    }
+    app.appendChild(d);
+  }
+}
+
+// ============ 编辑器 ============
+function openPuzzle(item) {
+  ed.open = true;
+  ed.puzzleId = item.id;
+  let p = item;
+  document.getElementById('edTitle').textContent = (canEdit(item) ? '编辑: ' : '查看: ') + (p.title || 'Untitled');
+  let txt = `[[Title]] ${p.title || ''}\n[[FM]] ${p.sl || ''}\n[[reward]] ${p.reward || ''}\n\n[[Content]]\n${p.content || ''}\n\n[[Answer]] ${p.answer || ''}\n[[Cracker]] ${p.cracker || ''}`;
+  document.getElementById('edText').value = txt;
+
+  // 没有编辑权限 → 只读模式
+  let canModify = canEdit(item);
+  document.getElementById('edText').readOnly = !canModify;
+  document.getElementById('btnDelete').style.display = canDelete(item) ? '' : 'none';
+  document.getElementById('btnSave').style.display = canModify ? '' : 'none';
+
+  document.getElementById('editor').classList.add('show');
+}
+
+function closeEditor() { ed.open = false; ed.puzzleId = null; document.getElementById('editor').classList.remove('show'); }
+
+async function savePuzzle() {
+  if (!ed.puzzleId) { closeEditor(); return; }
+  if (!canEdit(state.puzzles.find(p => p.id === ed.puzzleId))) {
+    alert('你只能编辑自己的谜题');
+    return;
+  }
+
+  let raw = document.getElementById('edText').value;
+  let lines = raw.split('\n');
+  let p = { title: '', sl: '', reward: '', content: '', answer: '', cracker: '', trueReward: 0 };
+  let mode = 'title', cl = [];
+  for (let line of lines) {
+    if (line.startsWith('[[Title]]')) { p.title = line.slice(9).trim(); }
+    else if (line.startsWith('[[FM]]')) { p.sl = line.slice(6).trim(); }
+    else if (line.startsWith('[[reward]]')) { p.reward = line.slice(10).trim(); }
+    else if (line.startsWith('[[Content]]')) { mode = 'content'; }
+    else if (line.startsWith('[[Answer]]')) { mode = 'answer'; p.answer = line.slice(10).trim(); }
+    else if (line.startsWith('[[Cracker]]')) { mode = 'cracker'; p.cracker = line.slice(11).trim(); }
+    else { if (mode === 'content') cl.push(line); }
+  }
+  p.trueReward = parseInt(p.reward) || 0;
+  p.content = cl.join('\n').trim();
+
+  if (ed.puzzleId) {
+    await updatePuzzle(ed.puzzleId, p);
+    await loadPage();
+  }
+  closeEditor();
+}
+
+async function deletePuzzle() {
+  if (!ed.puzzleId) { closeEditor(); return; }
+  if (!canDelete(state.puzzles.find(p => p.id === ed.puzzleId))) {
+    alert('你只能删除自己的谜题');
+    return;
+  }
+  if (!confirm('确定删除这个谜题？\n注意：这个按钮不、是、取消编辑按钮喵！\n如果这个谜题不是您创建的，请勿删除它喵，点击取消喵，感谢尊重喵！')) return;
+  await removePuzzle(ed.puzzleId);
+  await loadPage();
+  closeEditor();
+}
+
+async function newPuzzle() {
+  // 从所有谜题中找出最大 T 编号（单次查询，避免 100 次请求）
+  let maxN = 0;
+  const { data: allTitles, error } = await sb.from('puzzles').select('title');
+  if (error) { alert('查询失败: ' + error.message); return; }
+  for (let p of (allTitles || [])) {
+    let m = (p.title || '').match(/T(\d+)/);
+    if (m) maxN = Math.max(maxN, parseInt(m[1]));
+  }
+  let n = maxN + 1;
+  let authorName = '游客';
+  if (me.profile) {
+    authorName = me.profile.username;
+  } else if (me.user) {
+    authorName = me.user.email.split('@')[0]; // fallback
+  }
+
+  let nc = {
+    title: 'T' + n + '. New Puzzle',
+    sl: 'FM 0',
+    reward: '0pts',
+    content: '① \n② \n③ \n④',
+    answer: '',
+    cracker: '',
+    trueReward: 0,
+    author_name: authorName
+  };
+  let inserted = await insertPuzzle(nc);
+  if (inserted) {
+    await loadPage();
+    openPuzzle(inserted);
+  }
+}
+
+async function exportAll() {
+  let all = await fetchAllPuzzles();
+  let exportData = { pages: [], cur: 0 };
+  for (let i = 0; i < TOTAL_PAGES; i++) exportData.pages.push([]);
+  for (let p of all) {
+    let pg = p.page || 0;
+    if (pg < TOTAL_PAGES) {
+      exportData.pages[pg].push({ type: 'pz', data: { title: p.title, sl: p.sl, reward: p.reward, content: p.content, answer: p.answer, cracker: p.cracker, trueReward: p.true_reward } });
+    }
+  }
+  let txt = JSON.stringify(exportData, null, 2);
+  document.getElementById('edTitle').textContent = '导出全部数据';
+  document.getElementById('edText').value = txt;
+  document.getElementById('btnDelete').style.display = 'none';
+  document.getElementById('btnSave').style.display = 'none';
+  ed.puzzleId = null; ed.open = true;
+  document.getElementById('editor').classList.add('show');
+}
+
+// ============ 触摸滑动 ============
+let tsx = 0, tsy = 0;
+document.addEventListener('touchstart', e => { if (ed.open) return; tsx = e.touches[0].clientX; tsy = e.touches[0].clientY; }, { passive: true });
+let swipeTimer = null;
+document.addEventListener('touchend', e => {
+  if (ed.open) return;
+  let dx = tsx - e.changedTouches[0].clientX, dy = tsy - e.changedTouches[0].clientY;
+  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 30) {
+    if (swipeTimer) return;
+    swipeTimer = setTimeout(() => swipeTimer = null, 300);
+    if (dx > 0) changePage(1); else changePage(-1);
+  }
+}, { passive: true });
+
+// ============ 键盘 ============
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if (ed.open) { closeEditor(); return; } }
+  if (ed.open) return;
+  if (e.key === 'ArrowLeft') changePage(-1);
+  else if (e.key === 'ArrowRight') changePage(1);
+});
+
+// ============ 启动 ============
+checkSession();
+</script>
+</body></html>
